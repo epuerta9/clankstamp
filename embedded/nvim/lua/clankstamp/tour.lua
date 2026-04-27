@@ -244,8 +244,8 @@ local function render_step(step)
     table.insert(lines, "")
   end
   table.insert(lines, string.rep("─", 50))
-  table.insert(lines, "[n] next  [p] prev  [o] open  [d] diff")
-  table.insert(lines, "[u] understood  [q] quit")
+  table.insert(lines, "in panel:   n next   p prev   o open   d diff   q quit")
+  table.insert(lines, "anywhere:   <leader>r{n,p,o,d}   (n alone = vim search!)")
   set_panel_lines(lines)
 end
 
