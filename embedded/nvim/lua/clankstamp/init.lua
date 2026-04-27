@@ -42,17 +42,57 @@ M.accept = safe_call(function()
   vim.notify("clankstamp: accept persistence not wired yet", vim.log.levels.INFO)
 end)
 
--- doctor prints binary version + a quick stamp count. Useful when wiring up
--- a new machine; the future :checkhealth provider can extend this.
+-- doctor prints a diagnostic report: binary version, stamp count, and the
+-- state of the default keymaps. Useful when wiring up a new machine — the
+-- top failure mode is "leader keymap doesn't fire because another plugin
+-- shadows <leader>r…".
 M.doctor = safe_call(function()
   local client = require("clankstamp.client")
+  local lines = { "clankstamp doctor:" }
+
   local ok, version = client.check_binary()
-  if not ok then
-    vim.notify("clankstamp binary check failed: " .. tostring(version), vim.log.levels.ERROR)
-    return
+  if ok then
+    table.insert(lines, "  binary:    " .. tostring(version))
+  else
+    table.insert(lines, "  binary:    NOT FOUND — " .. tostring(version))
   end
-  local entries = client.list()
-  vim.notify(string.format("clankstamp ok — %s, %d stamp(s) in this repo", version, #entries), vim.log.levels.INFO)
+
+  local list_ok, entries = pcall(client.list)
+  if list_ok then
+    table.insert(lines, "  stamps:    " .. tostring(#entries))
+  else
+    table.insert(lines, "  stamps:    error — " .. tostring(entries))
+  end
+
+  -- Leader + keymap state. maparg returns the raw RHS or "" if unbound.
+  -- maparg with a 4th arg returns a table with a `desc` field for richer
+  -- output, which lets us tell "ours" from "shadowed by another plugin".
+  local leader = vim.g.mapleader
+  table.insert(lines, "  leader:    " .. (leader == nil and "<NIL — defaults to \\>" or vim.inspect(leader)))
+  table.insert(lines, "  keymaps:")
+  local checks = {
+    "<leader>rr", "<leader>rn", "<leader>rp",
+    "<leader>rd", "<leader>ro", "<leader>ru",
+  }
+  for _, lhs in ipairs(checks) do
+    local info = vim.fn.maparg(lhs, "n", false, true)
+    if type(info) == "table" and info.lhs then
+      local desc = info.desc or "(no desc)"
+      local owner = desc:match("^clankstamp:") and "ours" or "SHADOWED"
+      table.insert(lines, string.format("    %-14s %s — %s", lhs, owner, desc))
+    else
+      table.insert(lines, string.format("    %-14s NOT BOUND", lhs))
+    end
+  end
+
+  -- Commands sanity check.
+  table.insert(lines, "  commands:")
+  for _, c in ipairs({ "Clankstamp", "ClankstampNext", "ClankstampDoctor", "CS" }) do
+    local exists = vim.fn.exists(":" .. c) == 2
+    table.insert(lines, string.format("    :%-22s %s", c, exists and "ok" or "MISSING"))
+  end
+
+  vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
 end)
 
 function M.setup(opts) M._opts = opts or {} end

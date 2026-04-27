@@ -15,27 +15,64 @@ if not ok then
   return
 end
 
-vim.api.nvim_create_user_command("Clankstamp", function() clankstamp.list() end, {})
-vim.api.nvim_create_user_command("ClankstampList", function() clankstamp.list() end, {})
-vim.api.nvim_create_user_command("ClankstampTour", function() clankstamp.tour() end, {})
-vim.api.nvim_create_user_command("ClankstampNext", function() clankstamp.next() end, {})
-vim.api.nvim_create_user_command("ClankstampPrev", function() clankstamp.prev() end, {})
-vim.api.nvim_create_user_command("ClankstampDiff", function() clankstamp.diff() end, {})
-vim.api.nvim_create_user_command("ClankstampOpenFile", function() clankstamp.open_file() end, {})
-vim.api.nvim_create_user_command("ClankstampMarkUnderstood", function() clankstamp.mark_understood() end, {})
-vim.api.nvim_create_user_command("ClankstampNeedsReview", function() clankstamp.needs_review() end, {})
-vim.api.nvim_create_user_command("ClankstampAccept", function() clankstamp.accept() end, {})
-vim.api.nvim_create_user_command("ClankstampDoctor", function() clankstamp.doctor() end, {})
+local function cmd(name, fn)
+  vim.api.nvim_create_user_command(name, function() fn() end, {})
+end
 
--- Default keymaps; users can override by setting `vim.g.clankstamp_no_default_maps = 1`.
+-- Canonical commands.
+cmd("Clankstamp", clankstamp.list)
+cmd("ClankstampList", clankstamp.list)
+cmd("ClankstampTour", clankstamp.tour)
+cmd("ClankstampNext", clankstamp.next)
+cmd("ClankstampPrev", clankstamp.prev)
+cmd("ClankstampDiff", clankstamp.diff)
+cmd("ClankstampOpenFile", clankstamp.open_file)
+cmd("ClankstampMarkUnderstood", clankstamp.mark_understood)
+cmd("ClankstampNeedsReview", clankstamp.needs_review)
+cmd("ClankstampAccept", clankstamp.accept)
+cmd("ClankstampDoctor", clankstamp.doctor)
+
+-- Aliases — typo tolerance and a short form. "Clank stamp" reads as two words
+-- so :ClankStamp (camelCase) is a near-universal first guess; cover it.
+cmd("ClankStamp", clankstamp.list)
+cmd("CS", clankstamp.list)
+
+-- <Plug> mappings — the proper way for users to wire their own keys without
+-- relying on default leader bindings (which can collide with other plugins'
+-- `<leader>r…` prefixes). Example user config:
+--   vim.keymap.set("n", "<leader>rr", "<Plug>(ClankstampList)")
+local function plug(name, fn)
+  vim.keymap.set("n", "<Plug>(" .. name .. ")", fn, { silent = true, desc = "clankstamp: " .. name })
+end
+plug("ClankstampList", clankstamp.list)
+plug("ClankstampNext", clankstamp.next)
+plug("ClankstampPrev", clankstamp.prev)
+plug("ClankstampDiff", clankstamp.diff)
+plug("ClankstampOpen", clankstamp.open_file)
+plug("ClankstampUnderstood", clankstamp.mark_understood)
+
+-- Default keymaps. Deferred to VimEnter so that `vim.g.mapleader` reflects
+-- the user's final value: lazy.nvim and similar managers can run our plugin
+-- before the user's leader assignment lands. We also skip any binding that's
+-- already taken so we don't shadow the user's own `<leader>r…` prefix.
 if vim.g.clankstamp_no_default_maps ~= 1 then
-  local map = function(lhs, rhs, desc)
-    vim.keymap.set("n", lhs, rhs, { desc = desc, silent = true })
-  end
-  map("<leader>rr", function() clankstamp.list() end, "clankstamp: list stamps")
-  map("<leader>rn", function() clankstamp.next() end, "clankstamp: next tour step")
-  map("<leader>rp", function() clankstamp.prev() end, "clankstamp: previous tour step")
-  map("<leader>rd", function() clankstamp.diff() end, "clankstamp: show step diff")
-  map("<leader>ro", function() clankstamp.open_file() end, "clankstamp: open step file")
-  map("<leader>ru", function() clankstamp.mark_understood() end, "clankstamp: mark step understood")
+  vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+      local maps = {
+        { "<leader>rr", clankstamp.list,            "clankstamp: list stamps" },
+        { "<leader>rn", clankstamp.next,            "clankstamp: next tour step" },
+        { "<leader>rp", clankstamp.prev,            "clankstamp: previous tour step" },
+        { "<leader>rd", clankstamp.diff,            "clankstamp: show step diff" },
+        { "<leader>ro", clankstamp.open_file,       "clankstamp: open step file" },
+        { "<leader>ru", clankstamp.mark_understood, "clankstamp: mark step understood" },
+      }
+      for _, m in ipairs(maps) do
+        local lhs, rhs, desc = m[1], m[2], m[3]
+        if vim.fn.maparg(lhs, "n") == "" then
+          vim.keymap.set("n", lhs, rhs, { silent = true, desc = desc })
+        end
+      end
+    end,
+  })
 end
