@@ -34,11 +34,11 @@ func Run(args []string, version string) error {
 	case "finalize":
 		return notImplemented("finalize", "close the active stamp and generate the tour")
 	case "list":
-		return notImplemented("list", "list stamps in .clankstamp/")
+		return runList(rest, os.Stdout, os.Stderr)
 	case "show":
-		return notImplemented("show", "print a stamp's manifest and tour")
+		return runShow(rest, os.Stdout, os.Stderr)
 	case "validate":
-		return notImplemented("validate", "validate a stamp against the JSON schemas")
+		return runValidate(rest, os.Stdout, os.Stderr)
 	case "doctor":
 		return notImplemented("doctor", "diagnose the local clankstamp install")
 	case "nvim":
