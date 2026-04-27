@@ -8,6 +8,7 @@ tour opens straight away.
 | Example | What it shows |
 |---------|---------------|
 | [`tenant-api-keys/`](./tenant-api-keys/) | A 4-step comprehension-ordered tour of an auth refactor: new data model → behavior change → tests. Demonstrates a full agent-curated `tour.jsonl` (vs the synthesized fallback). |
+| [`lazy.nvim/`](./lazy.nvim/) | Drop-in plugin spec for LazyVim / lazy.nvim users (whose `performance.rtp.reset = true` drops our pack/start install off `runtimepath`). |
 
 ## How to walk through any example
 
