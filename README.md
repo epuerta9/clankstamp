@@ -31,6 +31,41 @@ curated 4-step tour of an auth refactor. See
 [examples/tenant-api-keys/README.md](./examples/tenant-api-keys/README.md)
 for the walkthrough.
 
+### Using lazy.nvim?
+
+`clankstamp nvim install` drops the plugin under
+`~/.local/share/nvim/site/pack/clankstamp/start/clankstamp.nvim/`, which Neovim
+auto-loads. **But lazy.nvim defaults to `performance.rtp.reset = true`, which
+strips that path off `runtimepath`.** If your `:Clankstamp` command doesn't
+exist, that's why. Add this to your lazy plugin list:
+
+```lua
+{
+  "epuerta9/clankstamp",
+  -- Use the local install written by `clankstamp nvim install`. Drop this
+  -- `dir` line once we cut a tagged release.
+  dir = vim.fn.expand("~/.local/share/nvim/site/pack/clankstamp/start/clankstamp.nvim"),
+  cmd = { "Clankstamp", "ClankstampList", "ClankstampNext", "ClankstampDoctor", "CS" },
+  keys = {
+    { "<leader>rr", "<Plug>(ClankstampList)", desc = "clankstamp: list stamps" },
+    { "<leader>rn", "<Plug>(ClankstampNext)", desc = "clankstamp: next step" },
+    { "<leader>rp", "<Plug>(ClankstampPrev)", desc = "clankstamp: prev step" },
+    { "<leader>rd", "<Plug>(ClankstampDiff)", desc = "clankstamp: diff" },
+    { "<leader>ro", "<Plug>(ClankstampOpen)", desc = "clankstamp: open file" },
+  },
+}
+```
+
+If your `:Clankstamp` command is missing and you want to know which side of
+the loader it's on, run:
+
+```vim
+:set rtp?     " is clankstamp.nvim in there? if not, lazy.nvim reset rtp
+:source ~/.local/share/nvim/site/pack/clankstamp/start/clankstamp.nvim/plugin/clankstamp.lua
+:Clankstamp   " if this works after sourcing, it's a load-path issue, not a code issue
+:ClankstampDoctor   " prints binary version, stamp count, leader, and keymap state
+```
+
 ## Components (planned)
 
 - **`clankstamp` Go binary** — CLI for creating, validating, indexing, and viewing stamps.
