@@ -60,7 +60,7 @@ func dispatchNvim(args []string) error {
 	}
 	switch args[0] {
 	case "install":
-		return notImplemented("nvim install", "install the embedded Lua plugin into nvim's pack path")
+		return runNvimInstall(args[1:], os.Stdout, os.Stderr)
 	case "uninstall":
 		return notImplemented("nvim uninstall", "remove the embedded Lua plugin")
 	case "doctor":
@@ -76,7 +76,7 @@ func dispatchSkill(args []string) error {
 	}
 	switch args[0] {
 	case "install":
-		return notImplemented("skill install", "install the embedded SKILL.md (--target claude-code|standard, --scope global|project)")
+		return runSkillInstall(args[1:], os.Stdout, os.Stderr)
 	case "uninstall":
 		return notImplemented("skill uninstall", "remove the embedded SKILL.md")
 	case "doctor":
