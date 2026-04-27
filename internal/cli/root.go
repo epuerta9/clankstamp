@@ -28,9 +28,9 @@ func Run(args []string, version string) error {
 		fmt.Fprintln(os.Stdout, version)
 		return nil
 	case "init":
-		return notImplemented("init", "scaffold .clankstamp/ in the current repo")
+		return runInit(rest, os.Stdout, os.Stderr)
 	case "create":
-		return notImplemented("create", "create a stamp from --from-worktree, --from-commit, or --from-staged")
+		return runCreate(rest, os.Stdout, os.Stderr)
 	case "finalize":
 		return notImplemented("finalize", "close the active stamp and generate the tour")
 	case "list":
