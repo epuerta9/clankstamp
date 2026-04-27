@@ -23,6 +23,7 @@ local state = {
   step_idx = 1,
   panel_buf = nil,
   panel_win = nil,
+  main_win = nil, -- captured before open_panel splits, so we always land code in the right place
 }
 
 -- synthesize_steps_from_hunks builds a fallback step list when tour.jsonl is
@@ -77,9 +78,53 @@ local function normalize_path(path)
   return root .. "/" .. path
 end
 
+-- is_sidebar_win returns true for windows that hold a file-tree, picker,
+-- terminal, or other UI surface where we shouldn't drop a code buffer.
+-- The list covers the common LazyVim/snacks/folke ecosystem sidebars; we
+-- can extend it as more come up.
+local sidebar_filetypes = {
+  ["neo-tree"] = true,
+  ["NvimTree"] = true,
+  ["snacks_explorer"] = true,
+  ["snacks_picker_input"] = true,
+  ["snacks_picker_list"] = true,
+  ["snacks_dashboard"] = true,
+  ["Outline"] = true,
+  ["aerial"] = true,
+  ["Trouble"] = true,
+  ["trouble"] = true,
+  ["qf"] = true,
+  ["help"] = true,
+  ["dapui_scopes"] = true,
+  ["dapui_breakpoints"] = true,
+  ["dapui_stacks"] = true,
+  ["dapui_watches"] = true,
+  ["dap-repl"] = true,
+  ["clankstamp_tour"] = true,
+}
+
+local function is_sidebar_win(win)
+  if not vim.api.nvim_win_is_valid(win) then return true end
+  local buf = vim.api.nvim_win_get_buf(win)
+  local bt = vim.bo[buf].buftype
+  if bt ~= "" then return true end -- nofile, terminal, prompt, quickfix, help
+  local ft = vim.bo[buf].filetype
+  if sidebar_filetypes[ft] then return true end
+  if ft:match("^snacks_") or ft:match("^dap") then return true end
+  return false
+end
+
 local function find_main_window()
-  for _, w in ipairs(vim.api.nvim_list_wins()) do
-    if w ~= state.panel_win and vim.api.nvim_win_is_valid(w) then
+  -- Prefer the window the user was in when they invoked the picker. Captured
+  -- in M.open before the panel split happens, so it survives layout changes.
+  if state.main_win and state.main_win ~= state.panel_win
+      and vim.api.nvim_win_is_valid(state.main_win)
+      and not is_sidebar_win(state.main_win) then
+    return state.main_win
+  end
+  -- Fallback: any non-sidebar, non-panel window in the current tab.
+  for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if w ~= state.panel_win and not is_sidebar_win(w) then
       return w
     end
   end
@@ -208,19 +253,38 @@ local function open_file_for_step(step)
   if not step.files or #step.files == 0 then return end
   local f = step.files[1]
   local path = normalize_path(f.path)
-  local win = find_main_window()
-  if not win then return end
-  vim.api.nvim_set_current_win(win)
-  if vim.fn.filereadable(path) == 1 then
-    vim.cmd("edit " .. vim.fn.fnameescape(path))
-    if f.line_start and f.line_start > 0 then
-      local line_count = vim.api.nvim_buf_line_count(0)
-      local target = math.min(f.line_start, line_count)
-      vim.api.nvim_win_set_cursor(win, { target, 0 })
-      vim.cmd("normal! zz")
-    end
-  else
+  if vim.fn.filereadable(path) ~= 1 then
     vim.notify("clankstamp: file not found: " .. path, vim.log.levels.WARN)
+    return
+  end
+
+  local win = find_main_window()
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    -- No usable code window left — open a fresh one to the left of the panel.
+    vim.cmd("topleft new")
+    win = vim.api.nvim_get_current_win()
+    state.main_win = win
+  else
+    vim.api.nvim_set_current_win(win)
+  end
+
+  vim.cmd("edit " .. vim.fn.fnameescape(path))
+
+  -- The window's buffer just changed via :edit; re-derive it and clamp the
+  -- target line. nvim_win_set_cursor requires line >= 1 even on an empty
+  -- buffer, so we guard against the line_count == 0 case explicitly.
+  if f.line_start and f.line_start > 0 then
+    local buf = vim.api.nvim_win_get_buf(win)
+    local line_count = vim.api.nvim_buf_line_count(buf)
+    if line_count > 0 then
+      local target = math.max(1, math.min(f.line_start, line_count))
+      local ok, err = pcall(vim.api.nvim_win_set_cursor, win, { target, 0 })
+      if ok then
+        vim.cmd("normal! zz")
+      else
+        vim.notify("clankstamp: could not set cursor: " .. tostring(err), vim.log.levels.WARN)
+      end
+    end
   end
 end
 
@@ -256,6 +320,23 @@ function M.open(run_id)
     vim.notify("clankstamp: empty payload for " .. run_id, vim.log.levels.ERROR)
     return
   end
+
+  -- Capture the user's current window BEFORE we open the panel. If the
+  -- caller is in a sidebar (Explorer, Trouble, etc.), look around for a
+  -- real code window; failing that, we'll spawn one in open_file_for_step.
+  local cur = vim.api.nvim_get_current_win()
+  if is_sidebar_win(cur) then
+    state.main_win = nil
+    for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if not is_sidebar_win(w) then
+        state.main_win = w
+        break
+      end
+    end
+  else
+    state.main_win = cur
+  end
+
   state.run_id = run_id
   state.payload = payload
   -- Defensive: vim.json.decode renders JSON null as vim.NIL (userdata), not
@@ -322,6 +403,7 @@ function M.close()
   end
   state.panel_buf = nil
   state.panel_win = nil
+  state.main_win = nil
   hl.clear_all()
 end
 
