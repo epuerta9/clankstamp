@@ -65,8 +65,16 @@ end
 
 local function normalize_path(path)
   if path:match("^/") then return path end
-  if not state.payload or not state.payload.manifest then return path end
-  return state.payload.manifest.repo.root .. "/" .. path
+  if not state.payload then return path end
+  -- Prefer project_root (where .clankstamp/ currently lives) over manifest's
+  -- recorded repo.root, which is just metadata from create time and may not
+  -- match the current machine (e.g. a stamp checked into an examples/ dir).
+  local root = state.payload.project_root
+  if not root or root == "" then
+    root = state.payload.manifest and state.payload.manifest.repo and state.payload.manifest.repo.root
+  end
+  if not root or root == "" then return path end
+  return root .. "/" .. path
 end
 
 local function find_main_window()
@@ -281,8 +289,11 @@ end
 
 function M.show_diff()
   if not state.run_id or not state.payload then return end
-  local repo_root = state.payload.manifest.repo.root
-  local patch = repo_root .. "/.clankstamp/runs/" .. state.run_id .. "/patches/full.patch"
+  local root = state.payload.project_root
+  if not root or root == "" then
+    root = state.payload.manifest and state.payload.manifest.repo and state.payload.manifest.repo.root
+  end
+  local patch = root .. "/.clankstamp/runs/" .. state.run_id .. "/patches/full.patch"
   if vim.fn.filereadable(patch) ~= 1 then
     vim.notify("clankstamp: no patch file at " .. patch, vim.log.levels.WARN)
     return

@@ -5,17 +5,25 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/epuerta9/clankstamp/internal/replay"
 )
 
 // showPayload is the JSON shape emitted by `clankstamp show --json`. The nvim
 // plugin uses this to render the tour panel — keeping it stable matters.
+//
+// ProjectRoot is the directory that *currently* contains .clankstamp/. It may
+// differ from manifest.repo.root, which is the path baked in at create time
+// and is informational only. Lua should resolve relative file paths against
+// ProjectRoot so a stamp checked into a repo (an example, a fixture) opens
+// the right files no matter where the repo is cloned.
 type showPayload struct {
-	Manifest *replay.Manifest  `json:"manifest"`
-	Tour     []replay.TourStep `json:"tour"`
-	Hunks    []replay.Hunk     `json:"hunks"`
-	Events   []replay.Event    `json:"events,omitempty"`
+	ProjectRoot string            `json:"project_root"`
+	Manifest    *replay.Manifest  `json:"manifest"`
+	Tour        []replay.TourStep `json:"tour"`
+	Hunks       []replay.Hunk     `json:"hunks"`
+	Events      []replay.Event    `json:"events,omitempty"`
 }
 
 // runShow implements `clankstamp show <run_id>`.
@@ -69,7 +77,13 @@ func runShow(args []string, stdout, stderr io.Writer) error {
 		}
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(showPayload{Manifest: m, Tour: tour, Hunks: hunks, Events: events})
+		return enc.Encode(showPayload{
+			ProjectRoot: filepath.Dir(store.Root),
+			Manifest:    m,
+			Tour:        tour,
+			Hunks:       hunks,
+			Events:      events,
+		})
 	}
 
 	renderShow(stdout, m, tour, hunks)

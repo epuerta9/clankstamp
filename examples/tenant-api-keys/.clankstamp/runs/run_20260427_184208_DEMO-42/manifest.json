@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "run_id": "run_20260427_184208_DEMO-42",
+  "title": "Add tenant-scoped API keys",
+  "status": "ready",
+  "created_at": "2026-04-27T18:42:08Z",
+  "updated_at": "2026-04-27T18:42:08Z",
+  "repo": {
+    "root": "/example/repo",
+    "base_commit": "0000000000000000000000000000000000000000",
+    "dirty_at_start": true,
+    "dirty_at_finish": true
+  },
+  "task": {
+    "source": "github",
+    "id": "DEMO-42",
+    "title": "Add tenant-scoped API keys"
+  },
+  "harness": {
+    "name": "claude-code"
+  },
+  "artifacts": {
+    "events": "events.jsonl",
+    "tour": "tour.jsonl",
+    "hunks": "hunks.jsonl",
+    "evidence": "evidence.jsonl",
+    "review": "review.jsonl",
+    "patch_full": "patches/full.patch"
+  }
+}

@@ -19,8 +19,9 @@ vendor/
 *.swp
 *~
 
-# Local stamp data (developer-local; opt in to commit)
-.clankstamp/
+# Local stamp data (anchored to repo root so examples/*/.clankstamp/ — which
+# IS checked in as fixture data — is not ignored).
+/.clankstamp/
 
 # Direnv / local env
 .envrc

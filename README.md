@@ -13,7 +13,23 @@ highlights the hunk, and shows a side panel with the rationale and review checkl
 
 ## Status
 
-Early scaffolding. See [PRD.md](./PRD.md) for the full product spec.
+Early but working: `init`, `create --from-worktree`, `list`, `show`, `validate`,
+`skill install`, `nvim install` all work end-to-end. The Neovim plugin renders
+the picker, opens files at the step's line range, highlights hunks, and walks
+through the tour with `n`/`p`. See [PRD.md](./PRD.md) for the full product spec.
+
+## Try it without writing any code
+
+```bash
+git clone https://github.com/epuerta9/clankstamp
+cd clankstamp/examples/tenant-api-keys
+nvim
+```
+
+Then in Neovim run `:Clankstamp` (or press `<leader>rr`) to walk through a
+curated 4-step tour of an auth refactor. See
+[examples/tenant-api-keys/README.md](./examples/tenant-api-keys/README.md)
+for the walkthrough.
 
 ## Components (planned)
 
