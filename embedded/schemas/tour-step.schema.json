@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/epuerta9/clankstamp/schemas/tour-step.schema.json",
+  "title": "clankstamp tour step",
+  "description": "One JSONL line in tour.jsonl. See PRD §11.3.",
+  "type": "object",
+  "required": ["type", "step_id", "order", "title", "summary"],
+  "properties": {
+    "type": { "const": "tour.step" },
+    "step_id": { "type": "string" },
+    "order": { "type": "integer", "minimum": 1 },
+    "title": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "examples": [
+        "data_model",
+        "behavior_change",
+        "config_change",
+        "test_added",
+        "migration",
+        "dependency_change",
+        "off_plan",
+        "review_checklist"
+      ]
+    },
+    "summary": { "type": "string" },
+    "why": { "type": "string" },
+    "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string" },
+          "line_start": { "type": "integer" },
+          "line_end": { "type": "integer" },
+          "symbol": { "type": "string" }
+        }
+      }
+    },
+    "patch_ref": { "type": "string" },
+    "review_questions": { "type": "array", "items": { "type": "string" } },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } }
+  }
+}

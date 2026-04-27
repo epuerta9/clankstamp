@@ -1,0 +1,28 @@
+# Build artifacts
+/bin/
+/dist/
+# Anchored to repo root so we don't ignore directories named `clankstamp/`
+# (e.g. cmd/clankstamp/, embedded/skills/*/clankstamp/, embedded/nvim/lua/clankstamp/).
+/clankstamp
+/clankstamp.exe
+
+# Go
+*.test
+*.out
+coverage.txt
+vendor/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local stamp data (developer-local; opt in to commit)
+.clankstamp/
+
+# Direnv / local env
+.envrc
+.env
+.env.*

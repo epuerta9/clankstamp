@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/epuerta9/clankstamp/schemas/manifest.schema.json",
+  "title": "clankstamp stamp manifest",
+  "description": "Top-level metadata for a single clankstamp stamp. Lives at .clankstamp/runs/<run_id>/manifest.json.",
+  "type": "object",
+  "required": ["schema_version", "run_id", "title", "status", "created_at", "repo", "artifacts"],
+  "properties": {
+    "schema_version": { "type": "string", "examples": ["0.1"] },
+    "run_id": { "type": "string", "examples": ["run_20260427_081201_bd42"] },
+    "title": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "ready", "reviewing", "accepted", "partially_accepted", "rejected", "stale"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "repo": {
+      "type": "object",
+      "required": ["root", "base_commit"],
+      "properties": {
+        "root": { "type": "string" },
+        "remote": { "type": "string" },
+        "base_commit": { "type": "string" },
+        "head_commit": { "type": ["string", "null"] },
+        "dirty_at_start": { "type": "boolean" },
+        "dirty_at_finish": { "type": "boolean" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string", "examples": ["beads", "linear", "github"] },
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "harness": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "examples": ["claude-code", "pi", "opencode", "codex"] },
+        "session_id": { "type": ["string", "null"] }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["events", "tour"],
+      "properties": {
+        "events": { "type": "string" },
+        "tour": { "type": "string" },
+        "hunks": { "type": "string" },
+        "evidence": { "type": "string" },
+        "review": { "type": "string" },
+        "patch_full": { "type": "string" }
+      }
+    }
+  }
+}

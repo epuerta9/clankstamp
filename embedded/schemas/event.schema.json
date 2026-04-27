@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/epuerta9/clankstamp/schemas/event.schema.json",
+  "title": "clankstamp event",
+  "description": "One JSONL line in events.jsonl. Append-only. See PRD §11.2.",
+  "type": "object",
+  "required": ["type", "ts"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "run.started",
+        "run.finished",
+        "plan.loaded",
+        "file.read",
+        "file.write",
+        "file.delete",
+        "command.run",
+        "test.run",
+        "checkpoint",
+        "note"
+      ]
+    },
+    "ts": { "type": "string", "format": "date-time" },
+    "run_id": { "type": "string" },
+    "title": { "type": "string" },
+    "path": { "type": "string" },
+    "command": { "type": "string" },
+    "exit_code": { "type": "integer" },
+    "output_ref": { "type": "string" },
+    "source": { "type": "string" },
+    "id": { "type": "string" },
+    "status": { "type": "string" }
+  },
+  "additionalProperties": true
+}
