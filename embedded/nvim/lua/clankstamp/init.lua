@@ -1,31 +1,60 @@
--- clankstamp Lua module — public API surface.
+-- clankstamp.nvim — public API.
 --
--- The Lua plugin is intentionally thin: UI, keymaps, buffers, highlights, and
--- the picker live here. Stamp parsing, git integration, and tour generation
--- happen in the Go binary, called over stdio via `jobstart()`.
---
--- Each public function below is a stub for v0; see PRD §14 for the full UX.
+-- The plugin entry (plugin/clankstamp.lua) wires user commands and default
+-- keymaps to the functions exposed here. The actual logic lives in
+-- ./client.lua (binary shellouts), ./picker.lua (vim.ui.select wrapper),
+-- ./tour.lua (panel + navigation), and ./highlight.lua (extmark management).
 
 local M = {}
 
-local function not_implemented(name)
-  vim.notify("clankstamp." .. name .. ": not implemented yet — see PRD.md", vim.log.levels.INFO)
+-- safe_call wraps an entry point so any errors surface as :notify messages
+-- instead of raw stack traces. Saves the user from having to read Lua
+-- tracebacks for "binary not on PATH" or "stamp not found" type failures.
+local function safe_call(fn)
+  return function(...)
+    local ok, err = pcall(fn, ...)
+    if not ok then
+      vim.notify("clankstamp: " .. tostring(err), vim.log.levels.ERROR)
+    end
+  end
 end
 
-function M.list() not_implemented("list") end
-function M.tour() not_implemented("tour") end
-function M.next() not_implemented("next") end
-function M.prev() not_implemented("prev") end
-function M.diff() not_implemented("diff") end
-function M.open_file() not_implemented("open_file") end
-function M.mark_understood() not_implemented("mark_understood") end
-function M.needs_review() not_implemented("needs_review") end
-function M.accept() not_implemented("accept") end
+-- list opens the picker; on selection, opens the tour for that stamp.
+M.list = safe_call(function()
+  local picker = require("clankstamp.picker")
+  local tour = require("clankstamp.tour")
+  picker.pick(function(entry)
+    if entry then tour.open(entry.run_id) end
+  end)
+end)
 
--- setup() is optional in v0; included so users can pre-wire config without
--- breaking when the real implementation lands.
-function M.setup(opts)
-  M._opts = opts or {}
-end
+M.tour = safe_call(function() require("clankstamp.tour").open_panel() end)
+M.next = safe_call(function() require("clankstamp.tour").advance(1) end)
+M.prev = safe_call(function() require("clankstamp.tour").advance(-1) end)
+M.diff = safe_call(function() require("clankstamp.tour").show_diff() end)
+M.open_file = safe_call(function() require("clankstamp.tour").open_file_at_cursor() end)
+M.mark_understood = safe_call(function() require("clankstamp.tour").mark_understood() end)
+
+M.needs_review = safe_call(function()
+  vim.notify("clankstamp: needs_review persistence not wired yet", vim.log.levels.INFO)
+end)
+M.accept = safe_call(function()
+  vim.notify("clankstamp: accept persistence not wired yet", vim.log.levels.INFO)
+end)
+
+-- doctor prints binary version + a quick stamp count. Useful when wiring up
+-- a new machine; the future :checkhealth provider can extend this.
+M.doctor = safe_call(function()
+  local client = require("clankstamp.client")
+  local ok, version = client.check_binary()
+  if not ok then
+    vim.notify("clankstamp binary check failed: " .. tostring(version), vim.log.levels.ERROR)
+    return
+  end
+  local entries = client.list()
+  vim.notify(string.format("clankstamp ok — %s, %d stamp(s) in this repo", version, #entries), vim.log.levels.INFO)
+end)
+
+function M.setup(opts) M._opts = opts or {} end
 
 return M

@@ -54,6 +54,19 @@ func runShow(args []string, stdout, stderr io.Writer) error {
 	}
 
 	if *asJSON {
+		// Normalize nil slices to empty slices so the JSON contract is stable —
+		// nvim's vim.json.decode renders null as vim.NIL (userdata), which makes
+		// `#payload.tour` blow up on the Lua side. Plumbing this through the
+		// type system is more ceremony than it's worth for three slices.
+		if tour == nil {
+			tour = []replay.TourStep{}
+		}
+		if hunks == nil {
+			hunks = []replay.Hunk{}
+		}
+		if events == nil {
+			events = []replay.Event{}
+		}
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(showPayload{Manifest: m, Tour: tour, Hunks: hunks, Events: events})

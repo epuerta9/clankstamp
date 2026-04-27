@@ -25,6 +25,7 @@ vim.api.nvim_create_user_command("ClankstampOpenFile", function() clankstamp.ope
 vim.api.nvim_create_user_command("ClankstampMarkUnderstood", function() clankstamp.mark_understood() end, {})
 vim.api.nvim_create_user_command("ClankstampNeedsReview", function() clankstamp.needs_review() end, {})
 vim.api.nvim_create_user_command("ClankstampAccept", function() clankstamp.accept() end, {})
+vim.api.nvim_create_user_command("ClankstampDoctor", function() clankstamp.doctor() end, {})
 
 -- Default keymaps; users can override by setting `vim.g.clankstamp_no_default_maps = 1`.
 if vim.g.clankstamp_no_default_maps ~= 1 then
