@@ -31,6 +31,9 @@ cmd("ClankstampMarkUnderstood", clankstamp.mark_understood)
 cmd("ClankstampNeedsReview", clankstamp.needs_review)
 cmd("ClankstampAccept", clankstamp.accept)
 cmd("ClankstampDoctor", clankstamp.doctor)
+cmd("ClankstampClose", clankstamp.close)
+cmd("ClankstampQuit", clankstamp.close) -- ergonomic alias
+cmd("ClankstampToggleOverlay", clankstamp.toggle_overlay)
 
 -- Aliases — typo tolerance and a short form. "Clank stamp" reads as two words
 -- so :ClankStamp (camelCase) is a near-universal first guess; cover it.
@@ -50,6 +53,8 @@ plug("ClankstampPrev", clankstamp.prev)
 plug("ClankstampDiff", clankstamp.diff)
 plug("ClankstampOpen", clankstamp.open_file)
 plug("ClankstampUnderstood", clankstamp.mark_understood)
+plug("ClankstampClose", clankstamp.close)
+plug("ClankstampToggleOverlay", clankstamp.toggle_overlay)
 
 -- Default keymaps. Deferred to VimEnter so that `vim.g.mapleader` reflects
 -- the user's final value: lazy.nvim and similar managers can run our plugin
@@ -66,6 +71,8 @@ if vim.g.clankstamp_no_default_maps ~= 1 then
         { "<leader>rd", clankstamp.diff,            "clankstamp: show step diff" },
         { "<leader>ro", clankstamp.open_file,       "clankstamp: open step file" },
         { "<leader>ru", clankstamp.mark_understood, "clankstamp: mark step understood" },
+        { "<leader>rq", clankstamp.close,           "clankstamp: close tour" },
+        { "<leader>rt", clankstamp.toggle_overlay,  "clankstamp: toggle in-buffer overlay" },
       }
       for _, m in ipairs(maps) do
         local lhs, rhs, desc = m[1], m[2], m[3]

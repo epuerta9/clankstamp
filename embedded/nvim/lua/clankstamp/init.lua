@@ -34,6 +34,8 @@ M.prev = safe_call(function() require("clankstamp.tour").advance(-1) end)
 M.diff = safe_call(function() require("clankstamp.tour").show_diff() end)
 M.open_file = safe_call(function() require("clankstamp.tour").open_file_at_cursor() end)
 M.mark_understood = safe_call(function() require("clankstamp.tour").mark_understood() end)
+M.close = safe_call(function() require("clankstamp.tour").close() end)
+M.toggle_overlay = safe_call(function() require("clankstamp.tour").toggle_overlay() end)
 
 M.needs_review = safe_call(function()
   vim.notify("clankstamp: needs_review persistence not wired yet", vim.log.levels.INFO)

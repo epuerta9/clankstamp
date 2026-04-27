@@ -24,6 +24,7 @@ local state = {
   panel_buf = nil,
   panel_win = nil,
   main_win = nil, -- captured before open_panel splits, so we always land code in the right place
+  overlay_on = true, -- in-buffer virt_lines showing title/why/risk above each hunk
 }
 
 -- synthesize_steps_from_hunks builds a fallback step list when tour.jsonl is
@@ -131,6 +132,35 @@ local function find_main_window()
   return nil
 end
 
+-- step_by_id looks up a sibling step by id so connection summaries can pull
+-- the target's title for a richer label. Declared early because both
+-- render_step (panel) and highlight_step (overlay) consume it.
+local function step_by_id(id)
+  if not state.steps then return nil end
+  for _, s in ipairs(state.steps) do
+    if s.step_id == id then return s end
+  end
+  return nil
+end
+
+-- connection_summaries renders each connection as a short readable string,
+-- pulling the target step's title when possible.
+local function connection_summaries(step)
+  if not step.connections or type(step.connections) ~= "table" then return {} end
+  local out = {}
+  for _, c in ipairs(step.connections) do
+    if c.label and c.label ~= "" then
+      table.insert(out, c.label)
+    else
+      local target = step_by_id(c.to_step_id)
+      local title = target and target.title or c.to_step_id
+      local kind = c.kind or "→"
+      table.insert(out, string.format("%s %s", kind, title))
+    end
+  end
+  return out
+end
+
 -- open_panel creates the right-side scratch window that hosts the tour text.
 -- It's idempotent: calling it when the panel is already up is a no-op.
 function M.open_panel()
@@ -168,6 +198,7 @@ function M.open_panel()
   map("o", function() M.open_file_at_cursor() end, "clankstamp: open step file")
   map("d", function() M.show_diff() end, "clankstamp: show full diff")
   map("u", function() M.mark_understood() end, "clankstamp: mark step understood")
+  map("t", function() M.toggle_overlay() end, "clankstamp: toggle in-buffer overlay")
   map("q", function() M.close() end, "clankstamp: close tour")
   map("<CR>", function() M.open_file_at_cursor() end, "clankstamp: open step file")
 
@@ -236,6 +267,14 @@ local function render_step(step)
     end
     table.insert(lines, "")
   end
+  local conns = connection_summaries(step)
+  if #conns > 0 then
+    table.insert(lines, "Connections")
+    for _, c in ipairs(conns) do
+      table.insert(lines, "  → " .. c)
+    end
+    table.insert(lines, "")
+  end
   if step.review_questions and #step.review_questions > 0 then
     table.insert(lines, "Review")
     for _, q in ipairs(step.review_questions) do
@@ -244,8 +283,9 @@ local function render_step(step)
     table.insert(lines, "")
   end
   table.insert(lines, string.rep("─", 50))
-  table.insert(lines, "in panel:   n next   p prev   o open   d diff   q quit")
-  table.insert(lines, "anywhere:   <leader>r{n,p,o,d}   (n alone = vim search!)")
+  table.insert(lines, "in panel:   n next   p prev   o open   d diff")
+  table.insert(lines, "            t toggle overlay   q close tour")
+  table.insert(lines, "anywhere:   <leader>r{n,p,o,d,t,q}   (n alone = vim search!)")
   set_panel_lines(lines)
 end
 
@@ -291,12 +331,18 @@ end
 local function highlight_step(step)
   hl.clear_all()
   if not step.files then return end
-  for _, f in ipairs(step.files) do
+  local conns = connection_summaries(step)
+  for i, f in ipairs(step.files) do
     if f.line_start and f.line_end then
       local path = normalize_path(f.path)
       local buf = vim.fn.bufnr(path)
       if buf ~= -1 then
         hl.highlight_range(buf, f.line_start, f.line_end)
+        -- Only put the overlay above the FIRST file's range — multi-file
+        -- steps would otherwise repeat the same intent block per file.
+        if state.overlay_on and i == 1 then
+          hl.overlay_step(buf, f.line_start, step, conns)
+        end
       end
     end
   end
@@ -395,6 +441,20 @@ function M.mark_understood()
     string.format("clankstamp: marked step %d understood (persistence pending)", state.step_idx),
     vim.log.levels.INFO
   )
+end
+
+function M.toggle_overlay()
+  state.overlay_on = not state.overlay_on
+  if state.overlay_on then
+    -- Re-paint by replaying the current step's highlight pass.
+    if state.steps and state.steps[state.step_idx] then
+      highlight_step(state.steps[state.step_idx])
+    end
+    vim.notify("clankstamp: overlay on", vim.log.levels.INFO)
+  else
+    hl.clear_overlays()
+    vim.notify("clankstamp: overlay off", vim.log.levels.INFO)
+  end
 end
 
 function M.close()

@@ -102,18 +102,32 @@ type Hunk struct {
 
 // TourStep is one JSONL record in tour.jsonl.
 type TourStep struct {
-	Type             string     `json:"type"`
-	StepID           string     `json:"step_id"`
-	Order            int        `json:"order"`
-	Title            string     `json:"title"`
-	Kind             string     `json:"kind,omitempty"`
-	Summary          string     `json:"summary"`
-	Why              string     `json:"why,omitempty"`
-	Risk             string     `json:"risk,omitempty"`
-	Files            []FileRef  `json:"files,omitempty"`
-	PatchRef         string     `json:"patch_ref,omitempty"`
-	ReviewQuestions  []string   `json:"review_questions,omitempty"`
-	EvidenceRefs     []string   `json:"evidence_refs,omitempty"`
+	Type             string       `json:"type"`
+	StepID           string       `json:"step_id"`
+	Order            int          `json:"order"`
+	Title            string       `json:"title"`
+	Kind             string       `json:"kind,omitempty"`
+	Summary          string       `json:"summary"`
+	Why              string       `json:"why,omitempty"`
+	Risk             string       `json:"risk,omitempty"`
+	Files            []FileRef    `json:"files,omitempty"`
+	PatchRef         string       `json:"patch_ref,omitempty"`
+	ReviewQuestions  []string     `json:"review_questions,omitempty"`
+	EvidenceRefs     []string     `json:"evidence_refs,omitempty"`
+	// Connections links this step to other steps in the tour. The renderer
+	// uses these to show "tests step 3", "uses step 2", etc., so the user
+	// can see how the change hangs together as a whole rather than as a
+	// pile of isolated edits.
+	Connections []StepConnection `json:"connections,omitempty"`
+}
+
+// StepConnection points from one tour step to another, with a verb that
+// describes the relationship. Common kinds: "tests", "uses", "extends",
+// "supersedes", "depends-on".
+type StepConnection struct {
+	ToStepID string `json:"to_step_id"`
+	Kind     string `json:"kind,omitempty"`
+	Label    string `json:"label,omitempty"`
 }
 
 // FileRef points at a region of a file referenced by a tour step.
