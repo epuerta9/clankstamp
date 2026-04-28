@@ -51,6 +51,35 @@ local function _find_stamp_idx(list, run_id)
   return nil
 end
 
+-- _step_files returns a normalised array of {path, line_start, line_end, symbol}
+-- entries for a tour step, accepting either the canonical `files` field per the
+-- tour-step JSON schema or a legacy/permissive `where: [{file, line}]` shape.
+-- Other field names render the same way through this normaliser, so a tour
+-- written against the old schema still gets a hunk highlight + Files panel +
+-- :ClankstampOpenFile target instead of silently no-op'ing.
+--
+-- Returns nil when the step has neither field, so callers can short-circuit.
+local function _step_files(step)
+  if type(step) ~= "table" then return nil end
+  if type(step.files) == "table" and #step.files > 0 then
+    return step.files
+  end
+  if type(step.where) == "table" and #step.where > 0 then
+    local out = {}
+    for _, w in ipairs(step.where) do
+      local entry = { path = w.path or w.file }
+      local ls = w.line_start or w.line
+      local le = w.line_end or w.line_start or w.line
+      if ls then entry.line_start = ls end
+      if le then entry.line_end = le end
+      if w.symbol then entry.symbol = w.symbol end
+      table.insert(out, entry)
+    end
+    return out
+  end
+  return nil
+end
+
 -- synthesize_steps_from_hunks builds a fallback step list when tour.jsonl is
 -- empty: one step per unique file, with line ranges spanning all hunks in
 -- that file.
@@ -191,12 +220,23 @@ function M.open_panel()
   if state.panel_win and vim.api.nvim_win_is_valid(state.panel_win) then
     return
   end
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = "nofile"
-  vim.bo[buf].bufhidden = "wipe"
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = "clankstamp_tour"
-  vim.api.nvim_buf_set_name(buf, "clankstamp://tour")
+  -- Reuse an existing panel buffer if one is around — happens after a hot-reload
+  -- where this module's `state` table was cleared but nvim still has the old
+  -- buffer named "clankstamp://tour". Without this, nvim_buf_set_name errors
+  -- E95 ("Buffer with this name already exists") on the second open.
+  local buf = vim.fn.bufnr("clankstamp://tour")
+  if buf == -1 or not vim.api.nvim_buf_is_valid(buf) then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].bufhidden = "wipe"
+    vim.bo[buf].swapfile = false
+    vim.bo[buf].filetype = "clankstamp_tour"
+    vim.api.nvim_buf_set_name(buf, "clankstamp://tour")
+  else
+    -- Existing buffer: clear it so the new tour overwrites the old content.
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+  end
 
   vim.cmd("botright vsplit")
   local win = vim.api.nvim_get_current_win()
@@ -277,10 +317,11 @@ local function render_step(step)
     table.insert(lines, "Risk: " .. step.risk)
     table.insert(lines, "")
   end
-  if step.files and #step.files > 0 then
+  local files = _step_files(step)
+  if files and #files > 0 then
     table.insert(lines, "Files")
-    for _, f in ipairs(step.files) do
-      local s = "  " .. f.path
+    for _, f in ipairs(files) do
+      local s = "  " .. (f.path or "?")
       if f.line_start and f.line_end then
         s = s .. ":" .. f.line_start .. "-" .. f.line_end
       end
@@ -314,8 +355,10 @@ local function render_step(step)
 end
 
 local function open_file_for_step(step)
-  if not step.files or #step.files == 0 then return end
-  local f = step.files[1]
+  local files = _step_files(step)
+  if not files or #files == 0 then return end
+  local f = files[1]
+  if not f.path then return end
   local path = normalize_path(f.path)
   if vim.fn.filereadable(path) ~= 1 then
     vim.notify("clankstamp: file not found: " .. path, vim.log.levels.WARN)
@@ -354,10 +397,11 @@ end
 
 local function highlight_step(step)
   hl.clear_all()
-  if not step.files then return end
+  local files = _step_files(step)
+  if not files then return end
   local conns = connection_summaries(step)
-  for i, f in ipairs(step.files) do
-    if f.line_start and f.line_end then
+  for i, f in ipairs(files) do
+    if f.path and f.line_start and f.line_end then
       local path = normalize_path(f.path)
       local buf = vim.fn.bufnr(path)
       if buf ~= -1 then
