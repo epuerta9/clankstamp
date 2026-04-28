@@ -25,6 +25,8 @@ cmd("ClankstampList", clankstamp.list)
 cmd("ClankstampTour", clankstamp.tour)
 cmd("ClankstampNext", clankstamp.next)
 cmd("ClankstampPrev", clankstamp.prev)
+cmd("ClankstampNextStamp", clankstamp.next_stamp)
+cmd("ClankstampPrevStamp", clankstamp.prev_stamp)
 cmd("ClankstampDiff", clankstamp.diff)
 cmd("ClankstampOpenFile", clankstamp.open_file)
 cmd("ClankstampMarkUnderstood", clankstamp.mark_understood)
@@ -50,6 +52,8 @@ end
 plug("ClankstampList", clankstamp.list)
 plug("ClankstampNext", clankstamp.next)
 plug("ClankstampPrev", clankstamp.prev)
+plug("ClankstampNextStamp", clankstamp.next_stamp)
+plug("ClankstampPrevStamp", clankstamp.prev_stamp)
 plug("ClankstampDiff", clankstamp.diff)
 plug("ClankstampOpen", clankstamp.open_file)
 plug("ClankstampUnderstood", clankstamp.mark_understood)
@@ -70,8 +74,10 @@ if vim.g.clankstamp_no_default_maps ~= 1 then
   local function bind_default_maps()
     local maps = {
       { "<leader>rr", clankstamp.list,            "clankstamp: list stamps" },
-      { "<leader>rn", clankstamp.next,            "clankstamp: next tour step" },
-      { "<leader>rp", clankstamp.prev,            "clankstamp: previous tour step" },
+      { "<leader>rn", clankstamp.next,            "clankstamp: next tour step (auto-advances across stamps)" },
+      { "<leader>rp", clankstamp.prev,            "clankstamp: previous tour step (auto-advances across stamps)" },
+      { "<leader>rN", clankstamp.next_stamp,      "clankstamp: next stamp (created_at order)" },
+      { "<leader>rP", clankstamp.prev_stamp,      "clankstamp: previous stamp (created_at order)" },
       { "<leader>rd", clankstamp.diff,            "clankstamp: show step diff" },
       { "<leader>ro", clankstamp.open_file,       "clankstamp: open step file" },
       { "<leader>ru", clankstamp.mark_understood, "clankstamp: mark step understood" },

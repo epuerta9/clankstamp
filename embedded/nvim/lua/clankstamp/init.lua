@@ -31,6 +31,12 @@ end)
 M.tour = safe_call(function() require("clankstamp.tour").open_panel() end)
 M.next = safe_call(function() require("clankstamp.tour").advance(1) end)
 M.prev = safe_call(function() require("clankstamp.tour").advance(-1) end)
+-- Cross-stamp navigation: walks the stamp list in created_at order. Lets
+-- a reviewer go through every stamp in a ticket without picker round-trips.
+-- M.next also auto-advances across stamp boundaries when called from the
+-- last/first step.
+M.next_stamp = safe_call(function() require("clankstamp.tour").next_stamp(1) end)
+M.prev_stamp = safe_call(function() require("clankstamp.tour").next_stamp(-1) end)
 M.diff = safe_call(function() require("clankstamp.tour").show_diff() end)
 M.open_file = safe_call(function() require("clankstamp.tour").open_file_at_cursor() end)
 M.mark_understood = safe_call(function() require("clankstamp.tour").mark_understood() end)

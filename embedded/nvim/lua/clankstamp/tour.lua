@@ -25,7 +25,31 @@ local state = {
   panel_win = nil,
   main_win = nil, -- captured before open_panel splits, so we always land code in the right place
   overlay_on = true, -- in-buffer virt_lines showing title/why/risk above each hunk
+  -- Cross-stamp navigation: when the user wants to walk the entire ticket
+  -- worth of stamps in created_at order without picker round-trips.
+  stamp_list = nil,  -- ordered [{run_id, created_at, ...}, ...]
+  stamp_idx = nil,   -- 1-based position of current run_id in stamp_list
 }
+
+-- _load_stamp_list pulls every stamp from the Go binary and sorts ASC by
+-- created_at. The CLI emits them in insertion order which is usually but
+-- not strictly chronological; the explicit sort makes navigation predictable.
+local function _load_stamp_list()
+  local client = require("clankstamp.client")
+  local ok, entries = pcall(client.list)
+  if not ok or type(entries) ~= "table" then return {} end
+  table.sort(entries, function(a, b)
+    return (a.created_at or "") < (b.created_at or "")
+  end)
+  return entries
+end
+
+local function _find_stamp_idx(list, run_id)
+  for i, e in ipairs(list) do
+    if e.run_id == run_id then return i end
+  end
+  return nil
+end
 
 -- synthesize_steps_from_hunks builds a fallback step list when tour.jsonl is
 -- empty: one step per unique file, with line ranges spanning all hunks in
@@ -394,6 +418,12 @@ function M.open(run_id)
     state.steps = synthesize_steps_from_hunks(payload)
   end
   state.step_idx = 1
+
+  -- Refresh the cross-stamp navigation index every open. Cheap (one CLI call,
+  -- ~50ms) and means new stamps created mid-session show up in next/prev_stamp
+  -- without an explicit refresh.
+  state.stamp_list = _load_stamp_list()
+  state.stamp_idx = _find_stamp_idx(state.stamp_list, run_id)
   if #state.steps == 0 then
     vim.notify(
       "clankstamp: stamp " .. run_id .. " has no tour and no hunks (empty diff?)",
@@ -408,10 +438,62 @@ end
 function M.advance(delta)
   if not state.steps or #state.steps == 0 then return end
   local idx = state.step_idx + delta
-  if idx < 1 then idx = 1 end
-  if idx > #state.steps then idx = #state.steps end
+
+  -- Auto-advance across stamp boundaries when stamp_list is populated. Walking
+  -- past the last step jumps to the next stamp's first step; walking before
+  -- the first step jumps to the previous stamp's last step. Lets <leader>rn
+  -- carry you through an entire ticket's worth of stamps without picker visits.
+  if idx > #state.steps then
+    if state.stamp_list and state.stamp_idx and state.stamp_idx < #state.stamp_list then
+      M.next_stamp(1)
+      return
+    end
+    idx = #state.steps
+  elseif idx < 1 then
+    if state.stamp_list and state.stamp_idx and state.stamp_idx > 1 then
+      M.next_stamp(-1)
+      -- next_stamp -> open() lands on step 1; we want the LAST step here.
+      if state.steps and #state.steps > 0 then
+        state.step_idx = #state.steps
+        M.show_step()
+      end
+      return
+    end
+    idx = 1
+  end
+
   state.step_idx = idx
   M.show_step()
+end
+
+-- M.next_stamp walks across stamps in created_at order. delta=+1 opens the next
+-- stamp, delta=-1 the previous. Idempotent at the ends — notifies "already at
+-- first/last stamp" without crashing or wrapping. When called before any stamp
+-- is open, opens the first/last in the list depending on direction.
+function M.next_stamp(delta)
+  if not state.stamp_list or #state.stamp_list == 0 then
+    state.stamp_list = _load_stamp_list()
+  end
+  if #state.stamp_list == 0 then
+    vim.notify("clankstamp: no stamps to navigate", vim.log.levels.INFO)
+    return
+  end
+  if not state.stamp_idx then
+    -- No current stamp — start from one end depending on direction.
+    local target = delta > 0 and state.stamp_list[1] or state.stamp_list[#state.stamp_list]
+    M.open(target.run_id)
+    return
+  end
+  local idx = state.stamp_idx + delta
+  if idx < 1 then
+    vim.notify("clankstamp: already at first stamp", vim.log.levels.INFO)
+    return
+  end
+  if idx > #state.stamp_list then
+    vim.notify("clankstamp: already at last stamp", vim.log.levels.INFO)
+    return
+  end
+  M.open(state.stamp_list[idx].run_id)
 end
 
 function M.show_diff()
