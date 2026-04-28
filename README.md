@@ -4,10 +4,15 @@
 
 ## Demo
 
-<https://github.com/epuerta9/clankstamp/raw/main/assets/clankstamp-demo.mp4>
+<video
+  src="https://github.com/epuerta9/clankstamp/releases/download/v0.0.1/clankstamp-demo.mp4"
+  controls muted playsinline width="720"
+  poster="https://raw.githubusercontent.com/epuerta9/clankstamp/main/assets/clankstamp-demo-poster.png">
+  Your markdown client doesn't render inline video — open it directly:
+  <a href="https://github.com/epuerta9/clankstamp/releases/download/v0.0.1/clankstamp-demo.mp4">clankstamp-demo.mp4</a>.
+</video>
 
-<!-- Inline video — GitHub renders this as a player. If your client doesn't, use the link above. -->
-<video src="https://github.com/epuerta9/clankstamp/raw/main/assets/clankstamp-demo.mp4" controls width="720"></video>
+[▶ open the demo video](https://github.com/epuerta9/clankstamp/releases/download/v0.0.1/clankstamp-demo.mp4)
 
 A walkthrough of the curated 4-step tour in [`examples/tenant-api-keys`](./examples/tenant-api-keys):
 picker → tour panel → in-buffer intent overlay above each hunk → step connections.
