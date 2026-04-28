@@ -2,6 +2,18 @@
 
 > Diffs show what changed. Chat says why. **clankstamp** lets you replay both.
 
+## Demo
+
+<https://github.com/epuerta9/clankstamp/raw/main/assets/clankstamp-demo.mp4>
+
+<!-- Inline video — GitHub renders this as a player. If your client doesn't, use the link above. -->
+<video src="https://github.com/epuerta9/clankstamp/raw/main/assets/clankstamp-demo.mp4" controls width="720"></video>
+
+A walkthrough of the curated 4-step tour in [`examples/tenant-api-keys`](./examples/tenant-api-keys):
+picker → tour panel → in-buffer intent overlay above each hunk → step connections.
+
+---
+
 `clankstamp` is a Go CLI, a JSONL artifact format, an embedded agent skill, and a Neovim plugin
 for creating human-readable **replay tours** of AI coding work.
 
