@@ -60,26 +60,40 @@ plug("ClankstampToggleOverlay", clankstamp.toggle_overlay)
 -- the user's final value: lazy.nvim and similar managers can run our plugin
 -- before the user's leader assignment lands. We also skip any binding that's
 -- already taken so we don't shadow the user's own `<leader>r…` prefix.
+--
+-- Hot-reload note: a `VimEnter` autocmd registered AFTER startup never fires —
+-- the event is one-shot at boot. So when this file is re-sourced via
+-- `:Lazy reload` or a hot-reload keymap, we must bind the maps directly
+-- instead of waiting on an autocmd that won't run again. `vim.v.vim_did_enter`
+-- is set to 1 once VimEnter has fired, which lets us pick the right path.
 if vim.g.clankstamp_no_default_maps ~= 1 then
-  vim.api.nvim_create_autocmd("VimEnter", {
-    once = true,
-    callback = function()
-      local maps = {
-        { "<leader>rr", clankstamp.list,            "clankstamp: list stamps" },
-        { "<leader>rn", clankstamp.next,            "clankstamp: next tour step" },
-        { "<leader>rp", clankstamp.prev,            "clankstamp: previous tour step" },
-        { "<leader>rd", clankstamp.diff,            "clankstamp: show step diff" },
-        { "<leader>ro", clankstamp.open_file,       "clankstamp: open step file" },
-        { "<leader>ru", clankstamp.mark_understood, "clankstamp: mark step understood" },
-        { "<leader>rq", clankstamp.close,           "clankstamp: close tour" },
-        { "<leader>rt", clankstamp.toggle_overlay,  "clankstamp: toggle in-buffer overlay" },
-      }
-      for _, m in ipairs(maps) do
-        local lhs, rhs, desc = m[1], m[2], m[3]
-        if vim.fn.maparg(lhs, "n") == "" then
-          vim.keymap.set("n", lhs, rhs, { silent = true, desc = desc })
-        end
+  local function bind_default_maps()
+    local maps = {
+      { "<leader>rr", clankstamp.list,            "clankstamp: list stamps" },
+      { "<leader>rn", clankstamp.next,            "clankstamp: next tour step" },
+      { "<leader>rp", clankstamp.prev,            "clankstamp: previous tour step" },
+      { "<leader>rd", clankstamp.diff,            "clankstamp: show step diff" },
+      { "<leader>ro", clankstamp.open_file,       "clankstamp: open step file" },
+      { "<leader>ru", clankstamp.mark_understood, "clankstamp: mark step understood" },
+      { "<leader>rq", clankstamp.close,           "clankstamp: close tour" },
+      { "<leader>rt", clankstamp.toggle_overlay,  "clankstamp: toggle in-buffer overlay" },
+    }
+    for _, m in ipairs(maps) do
+      local lhs, rhs, desc = m[1], m[2], m[3]
+      if vim.fn.maparg(lhs, "n") == "" then
+        vim.keymap.set("n", lhs, rhs, { silent = true, desc = desc })
       end
-    end,
-  })
+    end
+  end
+
+  if vim.v.vim_did_enter == 1 then
+    -- Hot-reload path: VimEnter already fired this session, bind now.
+    bind_default_maps()
+  else
+    -- Normal startup path: wait for VimEnter so the user's mapleader is set.
+    vim.api.nvim_create_autocmd("VimEnter", {
+      once = true,
+      callback = bind_default_maps,
+    })
+  end
 end
