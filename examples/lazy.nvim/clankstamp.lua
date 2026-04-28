@@ -25,17 +25,20 @@ return {
       "ClankstampNext", "ClankstampPrev", "ClankstampDiff",
       "ClankstampOpenFile", "ClankstampMarkUnderstood",
       "ClankstampNeedsReview", "ClankstampAccept",
-      "ClankstampDoctor",
+      "ClankstampDoctor", "ClankstampClose", "ClankstampQuit",
+      "ClankstampToggleOverlay",
       "ClankStamp", "CS", -- typo-tolerant aliases
     },
 
     keys = {
-      { "<leader>rr", "<Plug>(ClankstampList)",       desc = "clankstamp: list stamps" },
-      { "<leader>rn", "<Plug>(ClankstampNext)",       desc = "clankstamp: next tour step" },
-      { "<leader>rp", "<Plug>(ClankstampPrev)",       desc = "clankstamp: previous tour step" },
-      { "<leader>rd", "<Plug>(ClankstampDiff)",       desc = "clankstamp: show full diff" },
-      { "<leader>ro", "<Plug>(ClankstampOpen)",       desc = "clankstamp: open step file" },
-      { "<leader>ru", "<Plug>(ClankstampUnderstood)", desc = "clankstamp: mark step understood" },
+      { "<leader>rr", "<Plug>(ClankstampList)",          desc = "clankstamp: list stamps" },
+      { "<leader>rn", "<Plug>(ClankstampNext)",          desc = "clankstamp: next tour step" },
+      { "<leader>rp", "<Plug>(ClankstampPrev)",          desc = "clankstamp: previous tour step" },
+      { "<leader>rd", "<Plug>(ClankstampDiff)",          desc = "clankstamp: show full diff" },
+      { "<leader>ro", "<Plug>(ClankstampOpen)",          desc = "clankstamp: open step file" },
+      { "<leader>ru", "<Plug>(ClankstampUnderstood)",    desc = "clankstamp: mark step understood" },
+      { "<leader>rt", "<Plug>(ClankstampToggleOverlay)", desc = "clankstamp: toggle in-buffer overlay" },
+      { "<leader>rq", "<Plug>(ClankstampClose)",         desc = "clankstamp: close (quit) tour" },
     },
 
     -- Skip the default keymap registration in plugin/clankstamp.lua, since
