@@ -1,5 +1,9 @@
 # clankstamp
 
+<p align="center">
+  <img src="./assets/clankstamp-logo.png" alt="clankstamp logo" width="320">
+</p>
+
 > Diffs show what changed. Chat says why. **clankstamp** lets you replay both.
 
 ## Demo
